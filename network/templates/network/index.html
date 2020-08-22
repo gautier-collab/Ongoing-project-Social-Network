@@ -1,0 +1,289 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+
+    <script>
+
+        createPost = () => {
+
+            // INSERT HERE CODE ENABLING NEW POST ELEMENTS TO BE CREATED (or use Handlebars)
+            
+            // document.querySelector("#newPostText").value = "The script is working"
+
+
+
+            /*
+
+            // HANDLEBARS CODE COPIED FROM FLASK CHAT APP
+
+
+            <script id="channelTemplate" type="text/x-handlebars-template">
+
+                Choose a name for your new channel:
+                </br>
+                <input id='newChannel' type='text' placeholder='name' maxlength='30'>
+                </br>
+                <p style="padding: 5px;">
+                &nbsp;
+                <button id='submitChannel' onclick='submitChannel()'>
+                    Create
+                </button>
+                &nbsp;
+                <button onclick='cancel()'>
+                    Cancel
+                </button>
+                </p>
+
+            </script>
+
+
+            var template = Handlebars.compile(document.querySelector('#channelTemplate').innerHTML);
+            document.querySelector("#createSpace").innerHTML = template({});
+
+            */
+
+        }
+
+    </script>
+
+    <div id='index'></div>
+
+    <!--Following lines create a CSRF token for the Fetch API-->
+    {% csrf_token %}
+
+    <script type="text/babel">
+
+        // Following line avoids CSRF error when using the fetch API
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        class Content extends React.Component {
+
+            constructor(props) {
+                super(props);
+                this.state = {
+                    {% for post in posts %}
+                        post{{post.id}}: {
+                            regularDisplay: 'block',
+                            editDisplay: 'none',
+                            username: '{{post.user.username}}',
+                            postText : '{{post.text}}',
+                            likeNum : parseInt({{post.likes.count}}),
+                            {% if user in post.likes.all %}
+                                heartClass: "fas fa-heart",
+                            {% else %}
+                                heartClass: "far fa-heart",
+                            {% endif %}
+                            {% if post.likes.count < 2 %}
+                                likeText: "like",
+                            {% else %}
+                                likeText: "likes",
+                            {% endif %}
+                        },
+                    {% endfor %}
+                }
+            }
+
+            render(){
+
+                // Style mapping from the state (because CSS attributes can't access the state directly)
+                const styles = {};
+                {% for post in posts %}
+                    styles["post"+{{post.id}}] = {regularDisplay: {display: this.state["post"+{{post.id}}].regularDisplay}, editDisplay: {display: this.state["post"+{{post.id}}].editDisplay}};
+                {% endfor %}
+
+                return(
+                    <div>
+
+                        <h1>All posts</h1>
+
+                        {% comment %} NEW-POST SECTION {% endcomment %}
+                        <br/>
+                        <div className="postArea">
+                            <h3>New post</h3>
+                            <textarea id="newPostText"></textarea>
+                            <br/>
+                            <button className="btn btn-primary btn-sm" onClick={() => this.post()}>Post</button>
+                        </div>
+
+                        {% for post in posts %}
+
+                            {% comment %} EVERY POST TEMPLATE {% endcomment %}
+                            <br/>
+                            <div className="postArea">
+
+                                <div className="date">{{post.date}}</div>
+                                <div className="author">{{post.user.username}}:</div>
+                                <div className="text" style={styles["post"+{{post.id}}].regularDisplay}>{this.state["post"+{{post.id}}].postText}</div>
+         
+                                <form style={styles["post"+{{post.id}}].editDisplay}>
+                                    <textarea></textarea>
+                                    <br/>
+                                    <input type="submit" value="Post" className="btn btn-primary btn-sm" />&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <input type="submit" value="Cancel" className="btn btn-secondary btn-sm" onClick={() => this.cancel({{post.id}})} />
+                                </form>
+
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <i className={this.state["post"+{{post.id}}].heartClass} onClick={() => this.likeChange({{post.id}})}></i>
+                                            &nbsp;{this.state["post"+{{post.id}}].likeNum} {this.state["post"+{{post.id}}].likeText}
+                                            </td>
+                                            {% if post.user == user %}
+                                                <td>
+                                                    <span className="edit" style={styles["post"+{{post.id}}].regularDisplay} onClick={() => this.edit({{post.id}})}>Edit</span>
+                                                </td>
+                                            {% endif %}
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+                );
+            }
+
+            post = (post) => {
+
+                const request = new Request(
+                    "/post",
+                    {headers: {'X-CSRFToken': csrftoken}}
+                );
+
+                // Send like change data using Fetch API
+                fetch(request, {
+                    method: 'POST',
+                    mode: 'same-origin',  // Do not send CSRF token to another domain.
+                    body: JSON.stringify({
+                        username: '{{ user.username }}',
+                        text: document.querySelector('#newPostText').value,
+                    })
+                })
+
+                // Receive and process the response received from the server
+                .then(response => response.json())
+                .then(data => {
+
+                    console.log(data.message);
+                    document.querySelector('#newPostText').value = "";
+                    createPost();
+
+                    /*
+                    // Display the like change
+                    if (this.state["post" + postID].heartClass === "fas fa-heart") {
+
+                        // Induce dislike modifications to the state
+                        let key = "post" + postID;
+                        let newDic = {};
+                        newDic[key] = this.state["post" + postID]
+                        newDic[key]["heartClass"] = "far fa-heart"
+                        newDic[key]["likeNum"] = this.state["post" + postID].likeNum - 1
+                        this.setState(newDic);
+
+                    } else {
+
+                        // Induce like modifications to the state
+                        let key = "post" + postID;
+                        let newDic = {};
+                        newDic[key] = this.state["post" + postID]
+                        newDic[key]["heartClass"] = "fas fa-heart"
+                        newDic[key]["likeNum"] = this.state["post" + postID].likeNum + 1
+                        this.setState(newDic); 
+
+                    } */
+
+                })
+
+                .catch(function(error) {
+                    console.log("Fetch error: " + error);
+                });
+
+            }            
+
+            edit = (postID) => {
+                // Modifications to the state so the post text is replaced with a textarea
+                let postDic = {};
+                postDic["post" + postID] = this.state["post" + postID];
+                postDic["post" + postID]["regularDisplay"] = "none";
+                postDic["post" + postID]["editDisplay"] = "block";
+                this.setState(postDic);
+            }
+
+            cancel = (postID) => {
+                // Modifications to the state so the text area is replaced with the post text
+                let postDic = {};
+                postDic["post" + postID] = this.state["post" + postID];
+                postDic["post" + postID]["regularDisplay"] = "block";
+                postDic["post" + postID]["editDisplay"] = "none";
+                this.setState(postDic);
+            }
+
+            likeChange = (postID) => {
+
+                const request = new Request(
+                    "/likechange",
+                    {headers: {'X-CSRFToken': csrftoken}}
+                );
+
+                // Send like change data using Fetch API
+                fetch(request, {
+                    method: 'POST',
+                    mode: 'same-origin',  // Do not send CSRF token to another domain.
+                    body: JSON.stringify({
+                        postID: postID,
+                        username: '{{ user.username }}',
+                    })
+                })
+
+                // Receive and process the response received from the server
+                .then(response => response.json())
+                .then(data => {
+
+                    console.log(data.message);
+
+                    // Display the like change
+                    if (this.state["post" + postID].heartClass === "fas fa-heart") {
+
+                        // Induce dislike modifications to the state
+                        let key = "post" + postID;
+                        let newDic = {};
+                        newDic[key] = this.state["post" + postID]
+                        newDic[key]["heartClass"] = "far fa-heart"
+                        newDic[key]["likeNum"] = this.state["post" + postID].likeNum - 1
+                        this.setState(newDic);
+
+                    } else {
+
+                        // Induce like modifications to the state
+                        let key = "post" + postID;
+                        let newDic = {};
+                        newDic[key] = this.state["post" + postID]
+                        newDic[key]["heartClass"] = "fas fa-heart"
+                        newDic[key]["likeNum"] = this.state["post" + postID].likeNum + 1
+                        this.setState(newDic);
+
+                    }
+
+                })
+
+                .catch(function(error) {
+                    console.log("Fetch error: " + error);
+                });
+                
+            }
+            
+        }
+
+        ReactDOM.render(<Content />, document.querySelector('#index'));
+
+        // Prevent bootstrap buttons from staying focused after being released
+        $(".btn").mouseup(function(){
+            $(this).blur();
+        })
+
+    </script>
+
+{% endblock %}

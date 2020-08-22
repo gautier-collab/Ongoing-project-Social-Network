@@ -1,0 +1,125 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+
+    <!--Following lines create a CSRF token that will be used later on-->
+    {% csrf_token %}
+    <script>
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    </script>
+
+    <h1>All posts</h1>
+    <br/>
+    <div className="postArea">
+        <h3>New post</h3>
+        <form>
+            <textarea name="newPost"></textarea>
+            <br/>
+            <input type="submit" value="Post" class="btn btn-primary btn-sm"/>
+        </form>
+    </div>
+
+    {% for post in posts %}
+
+        <div id='post{{post.id}}'></div>
+
+        <script type="text/babel">            
+
+            console.log({{post.id}});
+
+            class Post{{post.id}} extends React.Component {
+
+                constructor(props) {
+                    super(props);
+                    this.state = {
+                        postID: {{post.id}},
+                        postText : '{{post.text}}',
+                        likeNum : parseInt({{post.likes.count}}),
+                        {% if user in post.likes.all %}
+                            heartClass: "fas fa-heart",
+                        {% else %}
+                            heartClass: "far fa-heart",
+                        {% endif %}
+                        {% if post.likes.count < 2 %}
+                            likeText: "like",
+                        {% else %}
+                            likeText: "likes",
+                        {% endif %}
+                    }
+                }
+
+                render(){
+
+                    return(
+                        <div>
+                            <br/>
+                            <div className="postArea">
+                                <div className="author">{{post.user}}:</div>
+                                {% if post.user == user %}
+                                    <div>Edit</div>
+                                {% endif %}
+                                <div>{this.state.postText}</div>
+                                <div className="date">{{post.date}}</div>
+                                <i className={this.state.heartClass} onClick={this.likeChange}></i>
+                                &nbsp;{this.state.likeNum} {this.state.likeText}
+                            </div>
+                        </div>
+                    );
+
+                }      
+
+                likeChange = () => {
+                    if (this.state.heartClass === "fas fa-heart") {
+                        this.setState(state => ({
+                            heartClass: "far fa-heart",
+                            likeNum: state.likeNum - 1,
+                        }));
+                    } else {
+                        this.setState(state => ({
+                            heartClass: "fas fa-heart",
+                            likeNum: state.likeNum + 1,
+                        }));
+                    }
+
+                    console.log("like change")
+
+                    var postID = this.state.postID;
+                    const request = new Request(
+                        "/likes",
+                        {headers: {'X-CSRFToken': csrftoken}}
+                    );
+
+                    fetch(request, {
+                        method: 'POST',
+                        mode: 'same-origin',  // Do not send CSRF token to another domain.
+                        body: JSON.stringify({
+                            postID: postID,
+                            username: '{{user.username}}',
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Print data
+                        console.log(data);
+
+
+                        
+                        // ... do something else with data ...
+
+
+
+                    })
+                    .catch(function(error) {
+                        console.log("Fetch error: " + error);
+                    });
+                }
+
+            }
+
+            ReactDOM.render(<Post{{post.id}} />, document.querySelector('#post{{post.id}}'));
+
+        </script>
+
+    {% endfor %}
+
+{% endblock %}

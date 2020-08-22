@@ -1,0 +1,51 @@
+.body {
+    margin: 5rem
+}
+
+.postArea {
+    border: 1px solid #bfbfbf;
+    border-radius: 11px;
+    padding: 1.1rem;
+    padding-right: 2.3rem; 
+    padding-left: 2.3rem;
+}
+
+textarea {
+    height: 5rem;
+    border: 1px solid #bfbfbf;
+    border-radius: 7px;
+    width: calc(100%);
+}
+
+.date {
+    color: rgb(136, 136, 136);
+    font-size: 0.92rem;
+    padding-bottom: 0.7rem;
+}
+
+.author {
+    font-weight: bold;
+    padding-bottom: 0.3rem;
+}
+
+table {
+    margin-top: 0.4rem;
+}
+
+td {
+    padding-right: 1rem;
+}
+
+.edit {
+    cursor:pointer;
+    color:blue;
+}
+
+.edit:hover {
+    text-decoration:none;
+    text-shadow: 1px 1px 1px rgb(172, 172, 172);
+}
+
+.fa-heart {
+    color:red
+}
